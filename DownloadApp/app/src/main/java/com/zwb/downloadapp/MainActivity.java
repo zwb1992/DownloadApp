@@ -22,7 +22,6 @@ import com.zwb.downloadapp.bean.FileInfoDAO;
 import com.zwb.downloadapp.service.DownloadService;
 
 import java.io.File;
-import java.security.Permissions;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;

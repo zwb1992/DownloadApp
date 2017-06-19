@@ -23,7 +23,6 @@ import okhttp3.ResponseBody;
 public class DownloadService extends Service {
     public static final int DOWNLOAD_START = 1;
     public static final int DOWNLOAD_STOP = 2;
-    private int type = 0;
     private OkHttpClient okHttpClient;
     private Call call;
     private FileInfoDAO fileInfoDao;
@@ -48,7 +47,8 @@ public class DownloadService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
             FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
-            type = intent.getIntExtra("type", DOWNLOAD_START);
+            resetFile(fileInfo);
+            int type = intent.getIntExtra("type", DOWNLOAD_START);
             Log.e("info", "--type---" + type + "-----" + fileInfo.toString());
             if (type == DOWNLOAD_START) {
                 if (call == null) {
@@ -83,6 +83,7 @@ public class DownloadService extends Service {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 ResponseBody body = response.body();
+                //如果是跳过某部分字节开始的，那么长度也会减少部分字节
                 long length = body.contentLength();
                 if (fileInfo.getLength() != 0) {
                     length = fileInfo.getLength();
@@ -98,10 +99,6 @@ public class DownloadService extends Service {
                 byte[] buffer = new byte[1024];
                 int len;
                 File file = new File(fileInfo.getFileName());
-//                //如果路径不存在，创建
-//                if (!file.exists()) {
-//                    file.createNewFile();
-//                }
                 //可读写文件
                 RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
                 randomAccessFile.setLength(length);
@@ -149,4 +146,17 @@ public class DownloadService extends Service {
         }
     }
 
+    /**
+     * 如果数据库里面有记录，这时候文件却被用户手动删除了，此时应该重置数据库内容
+     *
+     * @param fileInfo
+     */
+    private void resetFile(FileInfo fileInfo) {
+        File file = new File(fileInfo.getFileName());
+        if (fileInfo.getCompleted() != 0 && !file.exists()) {
+            fileInfo.setCompleted(0);
+            fileInfo.setLength(0);
+            fileInfoDao.delete(fileInfo);
+        }
+    }
 }
