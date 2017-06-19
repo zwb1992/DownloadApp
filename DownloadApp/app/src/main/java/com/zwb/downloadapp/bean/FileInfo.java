@@ -10,7 +10,7 @@ import java.io.Serializable;
 
 public class FileInfo implements Serializable{
 
-    private int id;
+    private int _id;
     private String url;
     private String fileName;
     private long length;//文件总长度
@@ -19,20 +19,20 @@ public class FileInfo implements Serializable{
     public FileInfo() {
     }
 
-    public FileInfo(int id, String url, String fileName, long length, long completed) {
-        this.id = id;
+    public FileInfo(int _id, String url, String fileName, long length, long completed) {
+        this._id = _id;
         this.url = url;
         this.fileName = fileName;
         this.length = length;
         this.completed = completed;
     }
 
-    public int getId() {
-        return id;
+    public int get_id() {
+        return _id;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void set_id(int _id) {
+        this._id = _id;
     }
 
     public String getUrl() {
@@ -70,7 +70,7 @@ public class FileInfo implements Serializable{
     @Override
     public String toString() {
         return "FileInfo{" +
-                "id=" + id +
+                "_id=" + _id +
                 ", url='" + url + '\'' +
                 ", fileName='" + fileName + '\'' +
                 ", length=" + length +
