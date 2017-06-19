@@ -1,6 +1,9 @@
 package com.zwb.downloadapp;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
@@ -24,9 +27,12 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.pb)
     ProgressBar pb;
 
-    private static final String url = "https://www.baidu.com/link?url=9Iprr-nXOUOWceTnNS0RahZC57heKq6oYRJTY-YeP0z96FXx3N5XzVf-dZ_Cka4N5USwjAEe3wdXOm5zsxrt4Iu2Wa_e1f3vskTgNg5tkUHON2moiiXWvOU1h8WSxM8g&wd=&eqid=fac4316f00017c4200000006594647f1";
-    private static final String path = Environment.getExternalStorageDirectory().getAbsolutePath()+ File.separator+"kugou.exe";
+    private static final String url = "http://sw.bos.baidu.com/sw-search-sp/software/a40ee9c29a4dd/QQ_8.9.3.21149_setup.exe";
+    private static final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "kugou.exe";
+    @BindView(R.id.tvProgress)
+    TextView tvProgress;
     private FileInfo fileInfo;
+    private DownloadReceiver downloadReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         tvName.setText("酷狗音乐");
         fileInfo = new FileInfo(1, url, path, 0, 0);
+        downloadReceiver = new DownloadReceiver();
+        IntentFilter filter = new IntentFilter("download");
+        registerReceiver(downloadReceiver, filter);
     }
 
     @OnClick({R.id.btStart, R.id.btStop})
@@ -42,16 +51,33 @@ public class MainActivity extends AppCompatActivity {
         switch (view.getId()) {
             case R.id.btStart:
                 Intent startIntent = new Intent(this, DownloadService.class);
-                startIntent.putExtra("fileInfo",fileInfo);
-                startIntent.putExtra("type",DownloadService.DOWNLOAD_START);
+                startIntent.putExtra("fileInfo", fileInfo);
+                startIntent.putExtra("type", DownloadService.DOWNLOAD_START);
                 startService(startIntent);
                 break;
             case R.id.btStop:
                 Intent stopIntent = new Intent(this, DownloadService.class);
-                stopIntent.putExtra("fileInfo",fileInfo);
-                stopIntent.putExtra("type",DownloadService.DOWNLOAD_STOP);
+                stopIntent.putExtra("fileInfo", fileInfo);
+                stopIntent.putExtra("type", DownloadService.DOWNLOAD_STOP);
                 startService(stopIntent);
                 break;
         }
     }
+
+    //下载进度回调广播
+    class DownloadReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int progress = intent.getIntExtra("progress", 0);
+            pb.setProgress(progress);
+            tvProgress.setText(progress + "%");
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(downloadReceiver);
+    }
+
 }
