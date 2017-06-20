@@ -14,6 +14,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -27,6 +28,9 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
+/**
+ * 单线程下载
+ */
 public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.tvName)
@@ -40,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "qq.exe";
     @BindView(R.id.tvProgress)
     TextView tvProgress;
+    @BindView(R.id.btMultipleDownload)
+    Button btMultipleDownload;
     private FileInfo fileInfo;
     private DownloadReceiver downloadReceiver;
     private FileInfoDAO fileInfoDAO;
@@ -54,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         downloadReceiver = new DownloadReceiver();
         IntentFilter filter = new IntentFilter("download");
         registerReceiver(downloadReceiver, filter);
-        fileInfoDAO = new FileInfoDAO(getApplicationContext());
+        fileInfoDAO = FileInfoDAO.getInstance(getApplicationContext());
         if (Build.VERSION.SDK_INT >= 23) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -63,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @OnClick({R.id.btStart, R.id.btStop})
+    @OnClick({R.id.btStart, R.id.btStop, R.id.btMultipleDownload})
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btStart:
@@ -79,16 +85,22 @@ public class MainActivity extends AppCompatActivity {
                 stopIntent.putExtra("type", DownloadService.DOWNLOAD_STOP);
                 startService(stopIntent);
                 break;
+            case R.id.btMultipleDownload:
+                startActivity(new Intent(this, MultipleDownloadActivity.class));
+                break;
         }
     }
+
 
     //下载进度回调广播
     class DownloadReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            int progress = intent.getIntExtra("progress", 0);
-            pb.setProgress(progress);
-            tvProgress.setText(progress + "%");
+            if ("download".equals(intent.getAction())) {
+                int progress = intent.getIntExtra("progress", 0);
+                pb.setProgress(progress);
+                tvProgress.setText(progress + "%");
+            }
         }
     }
 

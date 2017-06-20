@@ -13,7 +13,20 @@ import com.zwb.downloadapp.C;
  */
 
 public class DbHelper extends SQLiteOpenHelper {
-    public DbHelper(Context context) {
+    private static DbHelper dbHelper;
+
+    public static DbHelper getInstance(Context context) {
+        if (dbHelper == null) {
+            synchronized (DbHelper.class) {
+                if (dbHelper == null) {
+                    dbHelper = new DbHelper(context);
+                }
+            }
+        }
+        return dbHelper;
+    }
+
+    private DbHelper(Context context) {
         this(context, C.DB.DB_NAME, null, C.DB.VERSION);
     }
 

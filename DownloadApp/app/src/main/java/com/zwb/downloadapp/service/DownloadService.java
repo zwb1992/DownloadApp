@@ -12,6 +12,8 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -24,14 +26,15 @@ public class DownloadService extends Service {
     public static final int DOWNLOAD_START = 1;
     public static final int DOWNLOAD_STOP = 2;
     private OkHttpClient okHttpClient;
-    private Call call;
     private FileInfoDAO fileInfoDao;
+    private Map<String, Call> callMap;//用来存放所以请求
 
     @Override
     public void onCreate() {
         super.onCreate();
         okHttpClient = new OkHttpClient();
-        fileInfoDao = new FileInfoDAO(getApplicationContext());
+        fileInfoDao = FileInfoDAO.getInstance(getApplicationContext());
+        callMap = new HashMap<>();
     }
 
     public DownloadService() {
@@ -51,11 +54,11 @@ public class DownloadService extends Service {
             int type = intent.getIntExtra("type", DOWNLOAD_START);
             Log.e("info", "--type---" + type + "-----" + fileInfo.toString());
             if (type == DOWNLOAD_START) {
-                if (call == null) {
+                if (!callMap.containsKey(fileInfo.getUrl())) {
                     download(fileInfo);
                 }
             } else {
-                resetDownload();
+                resetDownload(fileInfo);
             }
         }
         return super.onStartCommand(intent, flags, startId);
@@ -72,11 +75,11 @@ public class DownloadService extends Service {
             builder.addHeader("RANGE", "bytes=" + fileInfo.getCompleted() + "-" + fileInfo.getLength());
         }
         Request request = builder.build();
-        call = okHttpClient.newCall(request);
+        Call call = okHttpClient.newCall(request);
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                resetDownload();
+                resetDownload(fileInfo);
                 e.printStackTrace();
             }
 
@@ -120,6 +123,10 @@ public class DownloadService extends Service {
                         Intent intent = new Intent("download");
                         intent.putExtra("progress", curProgress);
                         sendBroadcast(intent);
+
+                        intent = new Intent("multipleDownload");
+                        intent.putExtra("fileInfo", fileInfo);
+                        sendBroadcast(intent);
                     }
                 }
                 //关闭文件
@@ -130,26 +137,30 @@ public class DownloadService extends Service {
                     //清除数据库下载记录
                     fileInfoDao.delete(fileInfo);
                 } else {//2,因为网络或者其他原因导致下载暂停
-                    resetDownload();
+                    resetDownload(fileInfo);
                 }
             }
         });
+        callMap.put(fileInfo.getUrl(), call);
     }
 
     /**
      * 重置下载进度
      */
-    private void resetDownload() {
-        if (call != null) {
-            call.cancel();
-            call = null;
+    private void resetDownload(FileInfo fileInfo) {
+        if (callMap.containsKey(fileInfo.getUrl())) {
+            Call call = callMap.get(fileInfo.getUrl());
+            if (call != null) {
+                call.cancel();
+            }
+            callMap.remove(fileInfo.getUrl());
         }
     }
 
     /**
      * 如果数据库里面有记录，这时候文件却被用户手动删除了，此时应该重置数据库内容
      *
-     * @param fileInfo
+     * @param fileInfo 下载信息
      */
     private void resetFile(FileInfo fileInfo) {
         File file = new File(fileInfo.getFileName());
