@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
     //    private static final String url = "http://sw.bos.baidu.com/sw-search-sp/software/a40ee9c29a4dd/QQ_8.9.3.21149_setup.exe";
 //    private static final String url = "http://dlsw.baidu.com/sw-search-sp/soft/df/17757/popogame-2.0.66386.exe?version=1919350122";
-    private static final String url = "http://dlsw.baidu.com/sw-search-sp/soft/1a/30708/TankHero_4399_Ver1.0.0.0.1406601180.exe";
+    private static final String url = "http://gdown.baidu.com/data/wisegame/785f37df5d72c409/weixin_1320.apk";
     private static final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "qq.exe";
     @BindView(R.id.tvProgress)
     TextView tvProgress;

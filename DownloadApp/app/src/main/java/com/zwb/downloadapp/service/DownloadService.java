@@ -11,6 +11,7 @@ import com.zwb.downloadapp.bean.FileInfoDAO;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.Map;
@@ -95,7 +96,7 @@ public class DownloadService extends Service {
                 }
                 Log.e("info", "====isSuccessful====" + response.isSuccessful());
                 Log.e("info", "====length====" + length);
-                BufferedInputStream bInputStream = new BufferedInputStream(body.byteStream());
+                InputStream bInputStream = body.byteStream();
                 long tempLength = fileInfo.getCompleted();
                 Log.e("info", "====tempLength====" + tempLength);
                 int oldProgress = (int) (tempLength * 100 / length);//原始进度
@@ -107,18 +108,19 @@ public class DownloadService extends Service {
                 randomAccessFile.setLength(length);
                 randomAccessFile.seek(tempLength);
 
-                while ((len = bInputStream.read(buffer)) != -1) {
+                while ((len = bInputStream.read(buffer)) != -1 && !call.isCanceled()) {
                     tempLength += len;
                     //把字节写入文件
                     randomAccessFile.write(buffer, 0, len);
-                    Log.e("info", "====tempLength====" + tempLength);
                     // 更新数据库实时下载记录
                     fileInfo.setCompleted(tempLength);
-                    fileInfoDao.insert(fileInfo);
+//                    fileInfoDao.insert(fileInfo);
 
                     int curProgress = (int) (tempLength * 100 / length);//当前进度
                     //避免更新ui太频繁，进度有增加时才更新
                     if (curProgress > oldProgress) {
+                        oldProgress = curProgress;
+                        Log.e("info", "====curProgress====" + curProgress);
                         //通知ui线程更新ui
                         Intent intent = new Intent("download");
                         intent.putExtra("progress", curProgress);
